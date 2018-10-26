@@ -4,11 +4,17 @@ use ieee.numeric_std.all;
 use work.pkg_audiovhd.all;
 
 entity processingElement is
+  generic (
+    g_outputX : integer := 5;
+    g_outputY : integer := 5
+    );
   port (
-    i_clk                 : std_logic;
-    i_reset               : std_logic;
-    i_coefficientsN       : t_coefficients;
-    i_coefficientsNMinus1 : t_coefficients
+    i_clk                 : in  std_logic;
+    i_reset               : in  std_logic;
+    i_coefficientsN       : in  t_coefficients;
+    i_coefficientsNMinus1 : in  t_coefficients;
+    o_outputReady         : out std_logic;
+    o_output              : out std_logic_vector(c_dataWidth - 1 downto 0)
     );
 end entity;
 
@@ -99,8 +105,13 @@ begin
       end if;
       r_result      <= resize(r_accumMultiN + r_accumMultiNminus1, r_result'length);
       r_writeEnable <= (others => '0');
+      o_outputReady <= '0';
       if r_readStepShift(0) = 0 then
         r_writeEnable(r_nPlus1) <= r_startDone;
+        if r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
+          o_output      <= std_logic_vector(r_result);
+          o_outputReady <= '1';
+        end if;
       end if;
     end if;
   end process;
