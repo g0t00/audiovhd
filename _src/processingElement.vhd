@@ -46,6 +46,7 @@ architecture arch of processingElement is
   signal   r_accumMultiNMinus1   : signed(c_dataWidth - 1 downto 0);
   signal   r_calcDone            : std_logic;
   signal   r_startDone           : std_logic;
+
 begin
   p_state : process(i_reset, i_clk)
   begin
@@ -63,8 +64,8 @@ begin
     elsif rising_edge(i_clk) then
       r_readAddr        <= s_readAddr;
       r_writeAddr       <= fu_convert(fu_convert(r_positionShift(0)));
-      r_readDataN       <= signed(s_readData(r_nMinus1));
-      r_readDataNMinus1 <= signed(s_readData(r_n));
+      r_readDataN       <= signed(s_readData(r_n));
+      r_readDataNMinus1 <= signed(s_readData(r_nMinus1));
       for i in 0 to c_ramReadDelay - 2 loop
         r_readStepShift(i) <= r_readStepShift(i+1);
       end loop;
@@ -98,31 +99,36 @@ begin
       end if;
       if r_readStepShift(0) = 0 then    -- new loop
         r_accumMultiN       <= resize(shift_right(r_readDataN * i_coefficientsN(0), c_dataWidth/2), r_accumMultiN'length);
-        r_accumMultiNminus1 <= resize(shift_right(r_readDataN * i_coefficientsN(0), c_dataWidth/2), r_accumMultiNminus1'length);
+        r_accumMultiNminus1 <= resize(shift_right(r_readDataN * i_coefficientsNMinus1(0), c_dataWidth/2), r_accumMultiNminus1'length);
       else
         r_accumMultiN       <= r_accumMultiN + resize(shift_right(r_readDataN * signed(i_coefficientsN(r_readStepShift(0))), c_dataWidth/2), r_accumMultiN'length);
-        r_accumMultiNminus1 <= r_accumMultiNminus1 + resize(shift_right(r_readDataN * signed(i_coefficientsN(r_readStepShift(0))), c_dataWidth/2), r_accumMultiNminus1'length);
+        r_accumMultiNminus1 <= r_accumMultiNminus1 + resize(shift_right(r_readDataN * signed(i_coefficientsNMinus1(r_readStepShift(0))), c_dataWidth/2), r_accumMultiNminus1'length);
       end if;
       r_result      <= resize(r_accumMultiN + r_accumMultiNminus1, r_result'length);
       r_writeEnable <= (others => '0');
       o_outputReady <= '0';
       if r_readStepShift(0) = 0 then
         r_writeEnable(r_nPlus1) <= r_startDone;
-        if r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
-          o_output      <= std_logic_vector(r_result);
-          o_outputReady <= '1';
-        end if;
+      end if;
+      if r_writeEnable /= "000" and r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
+        o_output      <= std_logic_vector(r_result);
+        o_outputReady <= r_startDone;
+      end if;
+      if r_writeEnable /= "000" then
+        report "x: " & integer'image(r_positionShift(0).x) & " y: " & integer'image(r_positionShift(0).y)
+          & " value: " & to_hex_string(r_result);
       end if;
     end if;
   end process;
   s_positionRam         <= fu_convert(r_position);
   s_positionRamReadStep <= getPositionReadStep(s_positionRam, r_readStep);
   s_readAddr            <= fu_convert(s_positionRamReadStep);
-  identifier : for i in 0 to 2 generate
+  rams : for i in 0 to 2 generate
     dualPortRam_i : entity work.dualPortRam
       generic map (
-        g_dataWidth => c_dataWidth,
-        g_depth     => fu_getSize((c_innerGridSize + 4)**2)
+        g_initalValue => fu_getInitial(5),
+        g_dataWidth   => c_dataWidth,
+        g_depth       => fu_getSize((c_innerGridSize + 4)**2)
         )
       port map (
         i_clk          => i_clk,

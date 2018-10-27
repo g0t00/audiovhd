@@ -3,3 +3,5 @@
 _sim/testbench
 *.o
 _sim/work
+*.m~
+*.lst

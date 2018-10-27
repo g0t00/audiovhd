@@ -1,12 +1,14 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use ieee.numeric_std.all;
+use work.pkg_audiovhd.all;
 
 
 entity dualPortRam is
   generic (
-    g_dataWidth : positive;
-    g_depth     : positive
+    g_dataWidth   : positive;
+    g_depth       : positive;
+    g_initalValue : t_slvArray(0 to 2**g_depth - 1)
     );
   port(
     i_clk          : in  std_logic;
@@ -22,18 +24,9 @@ entity dualPortRam is
 end dualPortRam;
 
 architecture Behavioral of dualPortRam is
-  type ram_type is array(0 to 2**g_depth - 1) of std_logic_vector(g_dataWidth - 1 downto 0);
-  function fu_getInitial (size : integer)
-    return ram_type is
-    variable v_temp : ram_type;
-  begin
-    for i in 0 to size loop
-      v_temp(i) := std_logic_vector(to_unsigned(i * 65536, g_dataWidth));
-    end loop;
-    return v_temp;
-  end;
+
 --type and signal declaration for RAM.
-  signal ram         : ram_type := fu_getInitial(2**g_depth - 1);
+  signal ram         : t_slvArray(0 to 2**g_depth - 1) := g_initalValue;
   signal r_readDataA : std_logic_vector(g_dataWidth - 1 downto 0);
   signal r_readDataB : std_logic_vector(g_dataWidth - 1 downto 0);
 begin
@@ -48,6 +41,7 @@ begin
         o_readDataA <= ram(to_integer(unsigned(i_addrA)));
       end if;
       if i_writeEnableB then            --see if write enable is ON.
+        -- report to_hex_string(i_writeDataB);
         ram(to_integer(unsigned(i_addrB))) <= i_writeDataB;
         o_readDataB                        <= i_writeDataB;
       else
