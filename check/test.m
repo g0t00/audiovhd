@@ -1,7 +1,9 @@
+clear all;
 wordLength = 32;
 fractionLength = 16;
 innerGridSize = 12;
-globalfimath('RoundingMethod', 'Floor', 'SumMode', 'KeepLSB', 'OverflowAction', 'Wrap')
+F = globalfimath('RoundingMethod', 'Floor', 'SumMode', 'KeepLSB', 'OverflowAction', 'Wrap', 'ProductMode', 'SpecifyPrecision',...
+		'ProductWordLength',32,'ProductFractionLength',16);
 np1 = [];
 
 nm1 = [];
@@ -18,9 +20,19 @@ nm1 = zeros(innerGridSize+4, innerGridSize+4);
 n = zeros(innerGridSize+4, innerGridSize+4);
 np1 = zeros(innerGridSize+4, innerGridSize+4);
 center = 3+innerGridSize/2;
-for x=4:12
-    for y = 4:12
-      n(x, y) = 0.1 * cos(pi/(1*innerGridSize)*sqrt((x-center)^2+(y-center)^2) )^2;
+% for x=4:12
+%     for y = 4:12
+%       n(x, y) = 1 * cos(pi/(1*innerGridSize)*sqrt((x-center)^2+(y-center)^2) )^2;
+%       %disp(hex(sfi(n(x, y), wordLength, fractionLength)));
+% 
+%     end
+% end
+for y = 1:innerGridSize+4
+    for x = 1:innerGridSize+4
+      n(x, y) = sfi((innerGridSize+4) * (y-1) + x-1, wordLength, fractionLength);
+      nm1(x, y) = sfi((innerGridSize+4) * (y-1) + x-1, wordLength, fractionLength);
+      np1(x, y) = sfi((innerGridSize+4) * (y-1) + x-1, wordLength, fractionLength);
+
       %disp(hex(sfi(n(x, y), wordLength, fractionLength)));
 
     end
@@ -83,19 +95,53 @@ drawnow;
 %%
 result = np1(8, 8);
 %fprintf('startvalue: %s \n', count, hex(result));
+offsets = [
+    0 2;
+    -1 1;
+    0 1;
+    1 1;
+    -2 0;
+    -1 0;
+    0 0;
+    1 0;
+    2 0;
+    -1 -1;
+    0 -1;
+    1 -1;
+    0 -2
+ ];
+fileID = fopen('results.dat','w');
+
 for count = 1:1000
     for y = 3:2+innerGridSize
         for x = 3:2+innerGridSize
-            newValue = cast(coeffn(1) * n(x, y+2), 'like', n(1, 1)) + cast(coeffn(2) * n(x-1, y+1), 'like', n(1, 1)) + cast(coeffn(3) * n(x, y+1), 'like', n(1, 1)) + cast(coeffn(4) * n(x+1, y+1), 'like', n(1, 1)) ...
-           + cast(coeffn(5) * n(x-2, y), 'like', n(1, 1)) + cast(coeffn(6) * n(x-1, y), 'like', n(1, 1)) + cast(coeffn(7) * n(x, y), 'like', n(1, 1)) + cast(coeffn(8) * n(x+1, y), 'like', n(1, 1)) + cast(coeffn(9) * n(x+2, y), 'like', n(1, 1)) ...
-           + cast(coeffn(10) * n(x-1, y-1), 'like', n(1, 1)) + cast(coeffn(11) * n(x, y-1), 'like', n(1, 1)) + cast(coeffn(12) * n(x+1, y-1), 'like', n(1, 1)) + cast(coeffn(13) * n(x, y-2), 'like', n(1, 1)) + ...
-           cast(coeffnm1(1) * nm1(x, y+2), 'like', n(1, 1)) + cast(coeffnm1(2) * nm1(x-1, y+1), 'like', n(1, 1)) + cast(coeffnm1(3) * nm1(x, y+1), 'like', n(1, 1)) + cast(coeffnm1(4) * nm1(x+1, y+1), 'like', n(1, 1)) ...
-           + cast(coeffnm1(5) * nm1(x-2, y), 'like', n(1, 1)) + cast(coeffnm1(6) * nm1(x-1, y), 'like', n(1, 1)) + cast(coeffnm1(7) * nm1(x, y), 'like', n(1, 1)) + cast(coeffnm1(8) * nm1(x+1, y), 'like', n(1, 1)) + cast(coeffnm1(9) * nm1(x+2, y), 'like', n(1, 1)) ...
-           + cast(coeffnm1(10) * nm1(x-1, y-1), 'like', n(1, 1)) + cast(coeffnm1(11) * nm1(x, y-1), 'like', n(1, 1)) + cast(coeffnm1(12) * nm1(x+1, y-1), 'like', n(1, 1)) + cast(coeffnm1(13) * nm1(x, y-2), 'like', n(1, 1));
-            disp(newValue.hex)
+%             newValue = cast(coeffn(1) * n(x, y+2), 'like', n(1, 1)) + cast(coeffn(2) * n(x-1, y+1), 'like', n(1, 1)) + cast(coeffn(3) * n(x, y+1), 'like', n(1, 1)) + cast(coeffn(4) * n(x+1, y+1), 'like', n(1, 1)) ...
+%            + cast(coeffn(5) * n(x-2, y), 'like', n(1, 1)) + cast(coeffn(6) * n(x-1, y), 'like', n(1, 1)) + cast(coeffn(7) * n(x, y), 'like', n(1, 1)) + cast(coeffn(8) * n(x+1, y), 'like', n(1, 1)) + cast(coeffn(9) * n(x+2, y), 'like', n(1, 1)) ...
+%            + cast(coeffn(10) * n(x-1, y-1), 'like', n(1, 1)) + cast(coeffn(11) * n(x, y-1), 'like', n(1, 1)) + cast(coeffn(12) * n(x+1, y-1), 'like', n(1, 1)) + cast(coeffn(13) * n(x, y-2), 'like', n(1, 1)) + ...
+%            cast(coeffnm1(1) * nm1(x, y+2), 'like', n(1, 1)) + cast(coeffnm1(2) * nm1(x-1, y+1), 'like', n(1, 1)) + cast(coeffnm1(3) * nm1(x, y+1), 'like', n(1, 1)) + cast(coeffnm1(4) * nm1(x+1, y+1), 'like', n(1, 1)) ...
+%            + cast(coeffnm1(5) * nm1(x-2, y), 'like', n(1, 1)) + cast(coeffnm1(6) * nm1(x-1, y), 'like', n(1, 1)) + cast(coeffnm1(7) * nm1(x, y), 'like', n(1, 1)) + cast(coeffnm1(8) * nm1(x+1, y), 'like', n(1, 1)) + cast(coeffnm1(9) * nm1(x+2, y), 'like', n(1, 1)) ...
+%            + cast(coeffnm1(10) * nm1(x-1, y-1), 'like', n(1, 1)) + cast(coeffnm1(11) * nm1(x, y-1), 'like', n(1, 1)) + cast(coeffnm1(12) * nm1(x+1, y-1), 'like', n(1, 1)) + cast(coeffnm1(13) * nm1(x, y-2), 'like', n(1, 1));
+           accumN = sfi(0, wordLength, fractionLength);
+           accumNminus1 = sfi(0, wordLength, fractionLength);
+           for i=1:13
+               accumN = accumN + coeffn(i) * n(x + offsets(i, 1), y + offsets(i, 2));
+               %fprintf('%s %s\n', hex(n(x + offsets(i, 1), y + offsets(i, 2))), accumN.hex);
+
+               accumNminus1 = accumNminus1 + coeffnm1(i) * nm1(x + offsets(i, 1), y + offsets(i, 2));
+                %fprintf('%s %s\n', hex(nm1(x + offsets(i, 1), y + offsets(i, 2))), accumNminus1.hex);
+
+           end
+           %disp('###');
+           newValue = accumN + accumNminus1;
+           fprintf(fileID,'%s ',hex(newValue));
+
+            %disp(newValue.hex)
                 np1(x, y) = newValue;
+           
         end
     end
+    
+    fprintf(fileID,'\n');
     nm1 = n;
     n = np1;
     result = np1(8, 8);
@@ -105,6 +151,8 @@ for count = 1:1000
     %printInnerGrid(n);
     
 end
+fclose(fileID);
+
 %%
 % for i = 1:13
 %     asd = coeffn(i);
