@@ -8,10 +8,13 @@ package pkg_audiovhd is
 
   constant c_dataWidth     : integer := 32;
   type     t_signedArray is array (integer range <>) of signed(c_dataWidth - 1 downto 0);
+  type     t_signed2DArray is array (integer range <>, integer range <>) of signed(c_dataWidth - 1 downto 0);
   type     t_slvArray is array (integer range <>) of std_logic_vector(c_dataWidth - 1 downto 0);
+  type     t_sl2DArray is array (integer range <>, integer range <>) of std_logic;
   type     t_integerArray is array (integer range <>) of integer;
   subtype  t_coefficients is t_signedArray(0 to 12);
   constant c_innerGridSize : integer := 12;
+  constant c_outerGridSize : integer := 5;
   function fu_getSize (X   : integer)
     return integer;
   type t_position is record
@@ -19,10 +22,19 @@ package pkg_audiovhd is
     y : integer range 0 to c_innerGridSize -1;
   end record;
   type t_positionArray is array(integer range <>) of t_position;
+  type t_position2DArray is array(integer range <>, integer range <>) of t_position;
   type t_positionRam is record
     x : integer range 0 to c_innerGridSize -1 + 4;
     y : integer range 0 to c_innerGridSize -1 + 4;
   end record;
+  type t_positionOffset is record
+    x : integer range -1*c_innerGridSize to c_innerGridSize ;
+    y : integer range -1*c_innerGridSize to c_innerGridSize ;
+  end record;
+  function "+" ( L: t_positionRam; R: t_positionOffset) return t_positionRam;
+     -- Result subtype: UNSIGNED(L'LENGTH-1 downto 0).
+     -- Result: Adds an UNSIGNED vector, L, with a non-negative INTEGER, R.
+  type t_positionRam2DArray is array(integer range <>, integer range <>) of t_positionRam;
   function fu_convert (i : t_position)
     return t_positionRam;
   function fu_convert (i : t_positionRam)
@@ -30,6 +42,8 @@ package pkg_audiovhd is
   function getPositionReadStep(pos : t_positionRam; readStep : integer range 0 to 12)
     return t_positionRam;
   function fu_getInitial (size : integer)
+    return t_slvArray;
+  function fu_getInitialNumbers (size : integer)
     return t_slvArray;
 end package;
 package body pkg_audiovhd is
@@ -103,10 +117,28 @@ package body pkg_audiovhd is
                               * sqrt((real(x) - v_center)*(real(x) - v_center)
                                      + ((real(y) - v_center) * (real(y) - v_center)))) ** 2
           )), c_dataWidth));
-        --report to_hex_string(v_temp(x + 16*y));
+        -- report to_hex_string(v_temp(x + 16*y));
       end loop;
     end loop;
     return v_temp;
   end;
+  function fu_getInitialNumbers (size : integer)
+    return t_slvArray is
+    variable v_temp   : t_slvArray(0 to 2**fu_getSize((c_innerGridSize + 4)**2) - 1) := (others => (others => '0'));
+    variable v_center : real;
+  begin
+    for i in 0 to (c_innerGridSize + 4)**2 - 1 loop
+      v_temp(i) := std_logic_vector(to_signed(integer(65536.0 * real(i)), c_dataWidth));
+    end loop;
+    return v_temp;
+  end;
+    function "+" ( L: t_positionRam; R: t_positionOffset) return t_positionRam is
+      variable v_temp : t_positionRam;
+      begin
+        v_temp.x := L.x + R.x;
+        v_temp.y := L.y + R.y;
+        return v_temp;
+      end;
+
 
 end;

@@ -14,7 +14,13 @@ entity processingElement is
     i_coefficientsN       : in  t_coefficients;
     i_coefficientsNMinus1 : in  t_coefficients;
     o_outputReady         : out std_logic;
-    o_output              : out std_logic_vector(c_dataWidth - 1 downto 0)
+    o_output              : out std_logic_vector(c_dataWidth - 1 downto 0);
+    o_currentOutput       : out signed(c_dataWidth - 1 downto 0);
+    o_currentPosition     : out t_position;
+    o_currentValid        : out std_logic;
+    i_borderPosition      : in t_positionRam;
+    i_borderValid : in std_logic;
+    i_borderData : signed(c_dataWidth - 1 downto 0)
     );
 end entity;
 
@@ -26,7 +32,6 @@ architecture arch of processingElement is
   constant c_ramWriteDelay       : integer                                                             := 5;
   signal   r_position            : t_position;
   signal   r_positionShift       : t_positionArray(c_ramWriteDelay - 1 downto 0);
-  signal   S_writeEnableA        : std_logic;
   signal   s_readData            : t_slvArray(0 to 2);
   signal   r_readDataN           : signed(c_dataWidth - 1 downto 0);
   signal   r_readDataNminus1     : signed(c_dataWidth - 1 downto 0);
@@ -34,10 +39,8 @@ architecture arch of processingElement is
   signal   r_readAddr            : std_logic_vector(fu_getSize((c_innerGridSize + 4)**2) - 1 downto 0) := (others => '0');
   signal   r_writeAddr           : std_logic_vector(fu_getSize((c_innerGridSize + 4)**2) - 1 downto 0) := (others => '0');
   signal   r_writeEnable         : std_logic_vector(2 downto 0);
-  signal   S_writeDataB          : std_logic_vector(c_dataWidth - 1 downto 0);
-  signal   S_readDataB           : std_logic_vector(c_dataWidth - 1 downto 0);
-  signal   S_addrB               : std_logic_vector(fu_getSize((c_innerGridSize + 4)**2) - 1 downto 0) := (others => '0');
   signal   r_readStep            : integer range 0 to 12;
+  signal   rr_readStep            : integer range 0 to 12;
   signal   r_readStepShift       : t_integerArray(c_ramReadDelay - 1 downto 0);
   signal   s_positionRam         : t_positionRam;
   signal   s_positionRamReadStep : t_positionRam;
@@ -61,6 +64,9 @@ begin
       r_positionShift <= (others => (x => 0, y => 0));
       r_calcDone      <= '0';
       r_startDone     <= '0';
+      o_currentValid <= '0';
+      o_currentPosition <= (x => 0, y => 0);
+      o_currentOutput <=  (others => '0');
     elsif rising_edge(i_clk) then
       r_readAddr        <= s_readAddr;
       r_writeAddr       <= fu_convert(fu_convert(r_positionShift(0)));
@@ -99,10 +105,10 @@ begin
       end if;
       if r_readStepShift(0) = 0 then    -- new loop
         r_accumMultiN       <= resize(shift_right(r_readDataN * i_coefficientsN(0), c_dataWidth/2), r_accumMultiN'length);
-        r_accumMultiNminus1 <= resize(shift_right(r_readDataN * i_coefficientsNMinus1(0), c_dataWidth/2), r_accumMultiNminus1'length);
+        r_accumMultiNminus1 <= resize(shift_right(r_readDataNMinus1 * i_coefficientsNMinus1(0), c_dataWidth/2), r_accumMultiNminus1'length);
       else
         r_accumMultiN       <= r_accumMultiN + resize(shift_right(r_readDataN * signed(i_coefficientsN(r_readStepShift(0))), c_dataWidth/2), r_accumMultiN'length);
-        r_accumMultiNminus1 <= r_accumMultiNminus1 + resize(shift_right(r_readDataN * signed(i_coefficientsNMinus1(r_readStepShift(0))), c_dataWidth/2), r_accumMultiNminus1'length);
+        r_accumMultiNminus1 <= r_accumMultiNminus1 + resize(shift_right(r_readDataNMinus1 * signed(i_coefficientsNMinus1(r_readStepShift(0))), c_dataWidth/2), r_accumMultiNminus1'length);
       end if;
       r_result      <= resize(r_accumMultiN + r_accumMultiNminus1, r_result'length);
       r_writeEnable <= (others => '0');
@@ -114,10 +120,16 @@ begin
         o_output      <= std_logic_vector(r_result);
         o_outputReady <= r_startDone;
       end if;
+      o_currentValid <= '0';
       if r_writeEnable /= "000" then
-        report "x: " & integer'image(r_positionShift(0).x) & " y: " & integer'image(r_positionShift(0).y)
-          & " value: " & to_hex_string(r_result);
+        o_currentValid <= r_startDone;
+        o_currentPosition <= r_positionShift(0);
+        o_currentOutput <= r_result;
+        -- report "x: " & integer'image(r_positionShift(0).x) & " y: " & integer'image(r_positionShift(0).y)
+        --   & " value: " & to_hex_string(r_result);
       end if;
+      rr_readStep <= r_readStep;
+
     end if;
   end process;
   s_positionRam         <= fu_convert(r_position);
@@ -126,7 +138,7 @@ begin
   rams : for i in 0 to 2 generate
     dualPortRam_i : entity work.dualPortRam
       generic map (
-        g_initalValue => fu_getInitial(5),
+        g_initalValue => fu_getInitialNumbers(5),
         g_dataWidth   => c_dataWidth,
         g_depth       => fu_getSize((c_innerGridSize + 4)**2)
         )
