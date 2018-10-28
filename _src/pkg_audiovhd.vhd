@@ -1,12 +1,13 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+use ieee.STD_LOGIC_1164.all;
+use ieee.NUMERIC_STD.all;
 use ieee.math_real.all;
 use std.textio.all;                     -- Imports the standard textio package.
 
 package pkg_audiovhd is
 
   constant c_dataWidth     : integer := 32;
+  constant c_fractionLength : integer := 16;
   type     t_signedArray is array (integer range <>) of signed(c_dataWidth - 1 downto 0);
   type     t_signed2DArray is array (integer range <>, integer range <>) of signed(c_dataWidth - 1 downto 0);
   type     t_slvArray is array (integer range <>) of std_logic_vector(c_dataWidth - 1 downto 0);
@@ -114,7 +115,7 @@ package body pkg_audiovhd is
         for y in 3 to 11 loop
 
           v_temp(x + 16 * y) := std_logic_vector(to_signed(integer(round(
-            65536.0 * 0.1 * cos((MATH_PI / (1.0 * real(c_innerGridSize)))
+            real(2**c_fractionLength) * 0.1 * cos((MATH_PI / (1.0 * real(c_innerGridSize)))
                                 * sqrt((real(x) - v_center)*(real(x) - v_center)
                                        + ((real(y) - v_center) * (real(y) - v_center)))) ** 2
             )), c_dataWidth));
@@ -130,7 +131,7 @@ package body pkg_audiovhd is
     variable v_center : real;
   begin
     for i in 0 to (c_innerGridSize + 4)**2 - 1 loop
-      v_temp(i) := std_logic_vector(to_signed(integer(65536.0 * real(i)), c_dataWidth));
+      v_temp(i) := std_logic_vector(to_signed(2**c_fractionLength * i, c_dataWidth));
     end loop;
     return v_temp;
   end;

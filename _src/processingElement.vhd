@@ -16,7 +16,7 @@ entity processingElement is
     i_coefficientsN       : in  t_coefficients;
     i_coefficientsNMinus1 : in  t_coefficients;
     o_outputReady         : out std_logic;
-    o_output              : out std_logic_vector(c_dataWidth - 1 downto 0);
+    o_output              : out signed(c_dataWidth - 1 downto 0);
     o_currentOutput       : out signed(c_dataWidth - 1 downto 0);
     o_currentPosition     : out t_position;
     o_currentValid        : out std_logic;
@@ -56,6 +56,17 @@ begin
   p_state : process(i_reset, i_clk)
   begin
     if i_reset then
+      o_outputReady <= '0';
+      r_pointDone <= '0';
+      r_accumMultiNMinus1 <= (others => '0');
+      r_accumMultiN <= (others => '0');
+      r_writeData <= (others => '0');
+      rr_readStep <= 0;
+      r_writeEnable <= (others => '0');
+      r_writeAddr <= (others => '0');
+      r_readAddr <= (others => '0');
+      r_readDataNminus1 <= (others => '0');
+      r_readDataN <= (others => '0');
       r_nMinus1       <= 0;
       r_n             <= 1;
       r_nPlus1        <= 2;
@@ -122,7 +133,7 @@ begin
         r_pointDone <= '1';
       end if;
       if r_pointDone = '1' and r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
-        o_output      <= std_logic_vector(r_writeData);
+        o_output      <= r_writeData;
         o_outputReady <= r_startDone;
       end if;
       o_currentValid <= '0';

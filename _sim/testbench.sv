@@ -14,20 +14,20 @@ module testbench;
   logic s_outputReady ;
   logic signed [c_datawidth - 1 : 0] s_output;
   logic s_finished     = 0;
-  integer s_countDown = 1000;
+  integer s_countDown = 500;
   integer s_counter     = 1;
   t_coefficients dut_i_coefficientsN = {
     32'h0,
     32'h0,
-    32'h00005ff3,
+    32'h00007ee3,
     32'h0,
     32'h0,
-    32'h00005ff3,
-    32'h000008026,
-    32'h00005ff3,
+    32'h00007ee3,
+    32'h0000045f,
+    32'h00007ee3,
     32'h0,
     32'h0,
-    32'h00005ff3,
+    32'h00007ee3,
     32'h0,
     32'h0
     };
@@ -38,7 +38,7 @@ module testbench;
     32'h0,
     32'h0,
     32'h0,
-    32'hffff00e5,
+    32'hffff0015,
     32'h0,
     32'h0,
     32'h0,
@@ -46,6 +46,7 @@ module testbench;
     32'h0,
     32'h0
     };
+
   always begin
     #delay s_clk=~s_clk;
   end
@@ -92,6 +93,7 @@ module testbench;
     end
     if (s_outputReady) begin
       $display("count: %d output: %h %f", s_counter, s_output, s_output/65536.0);
+      $fflush();
       s_counter++;
       s_countDown--;
       // $stop;
