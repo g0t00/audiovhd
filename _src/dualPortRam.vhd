@@ -27,11 +27,9 @@ architecture Behavioral of dualPortRam is
 
 --type and signal declaration for RAM.
   signal ram         : t_slvArray(0 to 2**g_depth - 1) := g_initalValue;
-  signal r_readDataA : std_logic_vector(g_dataWidth - 1 downto 0);
-  signal r_readDataB : std_logic_vector(g_dataWidth - 1 downto 0);
 begin
 
-  process(i_clk)
+  process (i_clk)
   begin
     if (rising_edge(i_clk)) then
       if i_writeEnableA then            --see if write enable is ON.

@@ -41,7 +41,7 @@ package pkg_audiovhd is
     return std_logic_vector;
   function getPositionReadStep(pos : t_positionRam; readStep : integer range 0 to 12)
     return t_positionRam;
-  function fu_getInitial (size : integer)
+  function fu_getInitial (zeros : boolean)
     return t_slvArray;
   function fu_getInitialNumbers (size : integer)
     return t_slvArray;
@@ -103,23 +103,25 @@ package body pkg_audiovhd is
   begin
     return std_logic_vector(to_unsigned(i.x + (c_innerGridSize + 4) * i.y, fu_getSize((c_innerGridSize + 4)**2)));
   end;
-  function fu_getInitial (size : integer)
+  function fu_getInitial (zeros : boolean)
     return t_slvArray is
     variable v_temp   : t_slvArray(0 to 2**fu_getSize((c_innerGridSize + 4)**2) - 1) := (others => (others => '0'));
     variable v_center : real;
   begin
     v_center := 2.0 + real(c_innerGridSize) / 2.0;
-    for x in 3 to 11 loop
-      for y in 3 to 11 loop
+    if not zeros then
+      for x in 3 to 11 loop
+        for y in 3 to 11 loop
 
-        v_temp(x + 16 * y) := std_logic_vector(to_signed(integer(round(
-          65536.0 * 0.1 * cos((MATH_PI / (1.0 * real(c_innerGridSize)))
-                              * sqrt((real(x) - v_center)*(real(x) - v_center)
-                                     + ((real(y) - v_center) * (real(y) - v_center)))) ** 2
-          )), c_dataWidth));
-        -- report to_hex_string(v_temp(x + 16*y));
+          v_temp(x + 16 * y) := std_logic_vector(to_signed(integer(round(
+            65536.0 * 0.1 * cos((MATH_PI / (1.0 * real(c_innerGridSize)))
+                                * sqrt((real(x) - v_center)*(real(x) - v_center)
+                                       + ((real(y) - v_center) * (real(y) - v_center)))) ** 2
+            )), c_dataWidth));
+          -- report to_hex_string(v_temp(x + 16*y));
+        end loop;
       end loop;
-    end loop;
+    end if;
     return v_temp;
   end;
   function fu_getInitialNumbers (size : integer)

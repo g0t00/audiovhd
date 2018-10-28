@@ -14,20 +14,20 @@ module testbench;
   logic s_outputReady ;
   logic signed [c_datawidth - 1 : 0] s_output;
   logic s_finished     = 0;
-  integer s_countDown = 100;
+  integer s_countDown = 1000;
   integer s_counter     = 1;
   t_coefficients dut_i_coefficientsN = {
     32'h0,
     32'h0,
-    32'h00007ee3,
+    32'h00005ff3,
     32'h0,
     32'h0,
-    32'h00007ee3,
-    32'h0000045f,
-    32'h00007ee3,
+    32'h00005ff3,
+    32'h000008026,
+    32'h00005ff3,
     32'h0,
     32'h0,
-    32'h00007ee3,
+    32'h00005ff3,
     32'h0,
     32'h0
     };
@@ -38,7 +38,7 @@ module testbench;
     32'h0,
     32'h0,
     32'h0,
-    32'hffff0015,
+    32'hffff00e5,
     32'h0,
     32'h0,
     32'h0,
@@ -55,6 +55,15 @@ module testbench;
     end
 
   integer  file = $fopen("results.dat");
+  logic [c_datawidth - 1 : 0] dataSet[c_innergridsize * c_outergridsize - 1 : 0][c_innergridsize * c_outergridsize - 1 : 0];
+  logic [c_datawidth -1 : 0] dataFromElement[c_outergridsize - 1:0][c_outergridsize - 1:0];
+  genvar gx;
+  genvar gy;
+  for (gx=0; gx<c_outergridsize; gx++) begin : genbit
+    for (gy=0; gy<c_outergridsize; gy++) begin : genbit
+      assign dataFromElement[gx][gy] = dut.gen_outer[gx].gen_inner[gy].processingElement_i.o_currentOutput;
+    end
+  end
   always @(posedge s_clk) begin
     // if (s_reset == 0) begin
     //   if (dut.r_writeEnable != 0) begin
@@ -64,6 +73,23 @@ module testbench;
     //     end
     //   end
     // end
+    if (dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentValid) begin
+      // $display("point done");
+      for (int x = 0; x < c_outergridsize; x++) begin
+        for (int y = 0; y < c_outergridsize; y++) begin
+          // $fwrite(file, "%d %d %h\n", x * c_innergridsize + dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.x, y * c_innergridsize + dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.y, dataFromElement[x][y]);
+          dataSet[x * c_innergridsize + dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.x][y * c_innergridsize + dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.y] = dataFromElement[x][y];
+        end
+      end
+      if (dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.x == c_innergridsize - 1 && dut.gen_outer[0].gen_inner[0].processingElement_i.o_currentPosition.y == c_innergridsize - 1) begin
+        for (int x = 0; x < c_innergridsize * c_outergridsize; x++) begin
+          for (int y = 0; y < c_innergridsize * c_outergridsize; y++) begin
+            $fwrite(file, "%h ", dataSet[x][y]);
+          end
+        end
+        $fwrite(file, "\n");
+      end
+    end
     if (s_outputReady) begin
       $display("count: %d output: %h %f", s_counter, s_output, s_output/65536.0);
       s_counter++;

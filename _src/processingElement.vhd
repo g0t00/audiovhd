@@ -6,7 +6,9 @@ use work.pkg_audiovhd.all;
 entity processingElement is
   generic (
     g_outputX : integer := 5;
-    g_outputY : integer := 5
+    g_outputY : integer := 5;
+    g_x : integer;
+    g_y : integer
     );
   port (
     i_clk                 : in  std_logic;
@@ -44,12 +46,12 @@ architecture arch of processingElement is
   signal   r_readStepShift       : t_integerArray(c_ramReadDelay - 1 downto 0);
   signal   s_positionRam         : t_positionRam;
   signal   s_positionRamReadStep : t_positionRam;
-  signal   r_result              : signed(c_dataWidth - 1 downto 0);
+  signal   r_writeData              : signed(c_dataWidth - 1 downto 0);
   signal   r_accumMultiN         : signed(c_dataWidth - 1 downto 0);
   signal   r_accumMultiNMinus1   : signed(c_dataWidth - 1 downto 0);
   signal   r_calcDone            : std_logic;
   signal   r_startDone           : std_logic;
-
+  signal r_pointDone : std_logic;
 begin
   p_state : process(i_reset, i_clk)
   begin
@@ -67,6 +69,7 @@ begin
       o_currentValid <= '0';
       o_currentPosition <= (x => 0, y => 0);
       o_currentOutput <=  (others => '0');
+      o_output <=  (others => '0');
     elsif rising_edge(i_clk) then
       r_readAddr        <= s_readAddr;
       r_writeAddr       <= fu_convert(fu_convert(r_positionShift(0)));
@@ -110,35 +113,43 @@ begin
         r_accumMultiN       <= r_accumMultiN + resize(shift_right(r_readDataN * signed(i_coefficientsN(r_readStepShift(0))), c_dataWidth/2), r_accumMultiN'length);
         r_accumMultiNminus1 <= r_accumMultiNminus1 + resize(shift_right(r_readDataNMinus1 * signed(i_coefficientsNMinus1(r_readStepShift(0))), c_dataWidth/2), r_accumMultiNminus1'length);
       end if;
-      r_result      <= resize(r_accumMultiN + r_accumMultiNminus1, r_result'length);
+      r_writeData      <= resize(r_accumMultiN + r_accumMultiNminus1, r_writeData'length);
       r_writeEnable <= (others => '0');
       o_outputReady <= '0';
+      r_pointDone <= '0';
       if r_readStepShift(0) = 0 then
         r_writeEnable(r_nPlus1) <= r_startDone;
+        r_pointDone <= '1';
       end if;
-      if r_writeEnable /= "000" and r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
-        o_output      <= std_logic_vector(r_result);
+      if r_pointDone = '1' and r_positionShift(0).x = g_outputX and r_positionShift(0).y = g_outputY then
+        o_output      <= std_logic_vector(r_writeData);
         o_outputReady <= r_startDone;
       end if;
       o_currentValid <= '0';
-      if r_writeEnable /= "000" then
+      if r_pointDone then
         o_currentValid <= r_startDone;
         o_currentPosition <= r_positionShift(0);
-        o_currentOutput <= r_result;
+        o_currentOutput <= r_writeData;
         -- report "x: " & integer'image(r_positionShift(0).x) & " y: " & integer'image(r_positionShift(0).y)
-        --   & " value: " & to_hex_string(r_result);
+        --   & " value: " & to_hex_string(r_writeData);
       end if;
-      rr_readStep <= r_readStep;
 
+      rr_readStep <= r_readStep;
+      if i_borderValid then
+        r_writeEnable(r_nPlus1) <= r_startDone;
+        r_writeData <= i_borderData;
+        r_writeAddr <= fu_convert(i_borderPosition);
+      end if;
     end if;
   end process;
   s_positionRam         <= fu_convert(r_position);
   s_positionRamReadStep <= getPositionReadStep(s_positionRam, r_readStep);
   s_readAddr            <= fu_convert(s_positionRamReadStep);
   rams : for i in 0 to 2 generate
+    begin
     dualPortRam_i : entity work.dualPortRam
       generic map (
-        g_initalValue => fu_getInitialNumbers(5),
+        g_initalValue => fu_getInitial(g_x /= 2 or g_y /= 2),
         g_dataWidth   => c_dataWidth,
         g_depth       => fu_getSize((c_innerGridSize + 4)**2)
         )
@@ -149,7 +160,7 @@ begin
         o_readDataA    => s_readData(i),
         i_addrA        => r_readAddr,
         i_writeEnableB => r_writeEnable(i),
-        i_writeDataB   => std_logic_vector(r_result),
+        i_writeDataB   => std_logic_vector(r_writeData),
         o_readDataB    => open,
         i_addrB        => r_writeAddr
         );

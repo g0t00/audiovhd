@@ -31,9 +31,13 @@ architecture arch of processingGrid is
   signal r_borderData       :  t_signed2DArray(0 to c_outerGridSize - 1, 0 to c_outerGridSize - 1);
 begin
   gen_outer : for x in 0 to c_outerGridSize - 1 generate
+begin
     gen_inner : for y in 0 to c_outerGridSize - 1 generate
+      begin
       processingElement_i : entity work.processingElement
       generic map (
+        g_x => x,
+        g_y => y,
         g_outputX => g_outputX,
         g_outputY => g_outputY
       )
@@ -58,29 +62,35 @@ begin
   begin
     if i_reset then
       r_moves <= (others => s_copyNone);
+      r_borderValid <= (others => (others => '0'));
+      r_borderData <= (others => (others => (others => '0')));
     elsif rising_edge(i_clk) then
       r_borderValid <= (others => (others => '0'));
       if s_currentValid(0, 0) then
         r_moves <= (others => s_copyNone);
         if s_currentPosition(0, 0).y < 2 then
           r_moves(0) <= s_copyDown;
-        else if s_currentPosition(0, 0).y > c_outerGridSize - 2 then
+        elsif s_currentPosition(0, 0).y > c_innerGridSize - 2 then
           r_moves(0) <= s_copyUp;
         end if;
         if s_currentPosition(0, 0).x < 2 then
           r_moves(1) <= s_copyLeft;
-        else if s_currentPosition(0, 0).x > c_outerGridSize - 2 then
+        elsif s_currentPosition(0, 0).x > c_innerGridSize - 2 then
           r_moves(1) <= s_copyRight;
         end if;
         if s_currentPosition(0, 0).x < 2 and s_currentPosition(0, 0).y < 2 then
-          r_moves(3) <= s_copyDownLeft;
-        else if s_currentPosition(0, 0).x > c_outerGridSize - 2 and s_currentPosition(0, 0).y < 2 then
-          r_moves(3) <= s_copyDownRight;
-        else if s_currentPosition(0, 0).x < 2 and  s_currentPosition(0, 0).y > c_outerGridSize - 2 then
-          r_moves(3) <= s_copyUpLeft;
-        else if s_currentPosition(0, 0).x > c_outerGridSize - 2 and s_currentPosition(0, 0).y > c_outerGridSize - 2 then
-          r_moves(3) <= s_copyUpRight;
+          r_moves(2) <= s_copyDownLeft;
+        elsif s_currentPosition(0, 0).x > c_innerGridSize - 2 and s_currentPosition(0, 0).y < 2 then
+          r_moves(2) <= s_copyDownRight;
+        elsif s_currentPosition(0, 0).x < 2 and  s_currentPosition(0, 0).y > c_innerGridSize - 2 then
+          r_moves(2) <= s_copyUpLeft;
+        elsif s_currentPosition(0, 0).x > c_innerGridSize - 2 and s_currentPosition(0, 0).y > c_innerGridSize - 2 then
+          r_moves(2) <= s_copyUpRight;
         end if;
+      else
+        r_moves(0) <= r_moves(1);
+        r_moves(1) <= r_moves(2);
+        r_moves(2) <= r_moves(3);
       end if;
       case r_moves(0) is
         when s_copyLeft =>
@@ -160,9 +170,7 @@ begin
         when others =>
 
       end case;
-      r_moves(0) <= r_moves(1);
-      r_moves(1) <= r_moves(2);
-      r_moves(2) <= r_moves(3);
+
 
     end if;
   end process;
