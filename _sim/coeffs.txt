@@ -1,0 +1,30 @@
+coeffs1: t_coefficients dut_i_coefficientsN = {
+  32'h0,
+  32'h0,
+  32'h00007ee3,
+  32'h0,
+  32'h0,
+  32'h00007ee3,
+  32'h0000045f,
+  32'h00007ee3,
+  32'h0,
+  32'h0,
+  32'h00007ee3,
+  32'h0,
+  32'h0
+  };
+t_coefficients dut_i_coefficientsNMinus1 = {
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'hffff0015,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0,
+  32'h0
+  };

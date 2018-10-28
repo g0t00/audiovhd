@@ -5,3 +5,8 @@ _sim/testbench
 _sim/work
 *.m~
 *.lst
+_sim/transcript
+_sim/*.wlf
+_sim/wlf*
+_sim/*.vstf
+_sim/results.dat
