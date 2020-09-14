@@ -10,3 +10,8 @@ _sim/*.wlf
 _sim/wlf*
 _sim/*.vstf
 _sim/results.dat
+_sim/libraries/*
+_sim/node_modules
+_sim/*.mp4
+_sim/*.dat
+_syn

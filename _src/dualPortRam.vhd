@@ -26,24 +26,17 @@ end dualPortRam;
 architecture Behavioral of dualPortRam is
 
 --type and signal declaration for RAM.
-  signal ram         : t_slvArray(0 to 2**g_depth - 1) := g_initalValue;
+  signal ram : t_slvArray(0 to 2**g_depth - 1) := g_initalValue;
 begin
 
   process (i_clk)
   begin
     if (rising_edge(i_clk)) then
-      if i_writeEnableA then            --see if write enable is ON.
-        ram(to_integer(unsigned(i_addrA))) <= i_writeDataA;
-        o_readDataA                        <= i_writeDataA;
-      else
-        o_readDataA <= ram(to_integer(unsigned(i_addrA)));
-      end if;
+      o_readDataA <= ram(to_integer(unsigned(i_addrA)));
       if i_writeEnableB then            --see if write enable is ON.
         -- report to_hex_string(i_writeDataB);
         ram(to_integer(unsigned(i_addrB))) <= i_writeDataB;
-        o_readDataB                        <= i_writeDataB;
       else
-        o_readDataB <= ram(to_integer(unsigned(i_addrB)));
       end if;
     end if;
   end process;

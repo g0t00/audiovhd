@@ -11,3 +11,12 @@ add wave -group PE11 sim:/testbench/dut/gen_outer(1)/gen_inner(1)/processingElem
 add wave -group PE44 sim:/testbench/dut/gen_outer(4)/gen_inner(4)/processingElement_i/*
 add wave -position end sim:/testbench/*
 add wave -group PEEX end sim:/testbench/dut/gen_outer(2)/gen_inner(2)/processingElement_i/*
+add wave -group TG  sim:/testbench/*
+
+add wave -position end  sim:/testbench/dataN
+add wave -position end  sim:/testbench/dataNminus1
+add wave -position end  sim:/testbench/dataNplus1
+
+add wave -position end  sim:/testbench/i_borderPositionx
+add wave -position end  sim:/testbench/i_borderPositiony
+add wave -position end  sim:/testbench/i_borderValid
